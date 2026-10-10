@@ -61,9 +61,9 @@ const { sequelize } = require('./models');
 
 const PORT = process.env.PORT || 5000;
 
-sequelize.sync({ alter: true }) // Update schema dynamically
+sequelize.authenticate() // Solo verifica la conexion; el esquema se gestiona con schema.sql
   .then(() => {
-    console.log('✅ PostgreSQL Database synced successfully');
+    console.log('✅ Conectado a Supabase (PostgreSQL)');
     app.listen(PORT, () => {
       console.log(`🚀 CoreInventory Server running on port ${PORT}`);
     });
