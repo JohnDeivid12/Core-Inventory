@@ -86,8 +86,7 @@ export default function Layout() {
           <NavLink to="/profile" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
             {user?.profilePicture ? (
               <img 
-                src={`http://localhost:5000${user.profilePicture}`} 
-                alt="Profile" 
+                src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '')}${user.profilePicture}`}                alt="Profile" 
                 style={{ 
                   width: 28, 
                   height: 28, 

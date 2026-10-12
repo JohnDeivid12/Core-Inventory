@@ -102,7 +102,7 @@ export default function Profile() {
           <div style={{ position: 'relative', display: 'inline-block', margin: '0 auto 16px' }}>
             {user?.profilePicture ? (
               <img 
-                src={`http://localhost:5000${user.profilePicture}`} 
+                src={`${(import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '')}${user.profilePicture}`} 
                 alt="Profile" 
                 style={{ 
                   width: 80, 
