@@ -1,362 +1,233 @@
-# CoreInventory - Smart Inventory Management System
+# CoreInventory — Migración a Supabase, persistencia web y dashboard en Looker Studio
 
-**🎯 Odoo X indus University Hackathon Project**
+Sistema web de gestión de inventario (bodegas, productos, recepciones, entregas, transferencias y ajustes).
+Este repositorio es un fork del proyecto original [manthansingh26/Core-Inventory](https://github.com/manthansingh26/Core-Inventory),
+adaptado para el trabajo **Migración a Supabase, Persistencia Web y Visualización con Looker Studio**.
 
-> A comprehensive inventory management solution built with modern web technologies, featuring role-based access control, real-time stock tracking, and advanced profile management.
+## Qué se hizo
 
----
+| Fase | Resultado |
+|---|---|
+| 1. Auditoría del modelo | 8 tablas normalizadas con claves primarias, foráneas y reglas `ON DELETE` / `ON UPDATE`. El `schema.sql` original estaba desactualizado (faltaban columnas de perfil y verificación); se corrigió. |
+| 2. Supabase | Proyecto en Supabase, esquema creado con `schema.sql`, índices, RLS activado y datos poblados con `seed.sql`. |
+| 3. Persistencia | El backend (Express + Sequelize) opera directamente sobre Supabase. Se activó SSL y se desactivó `sync({ alter: true })`: el esquema lo gestiona `schema.sql`. |
+| 4. Looker Studio | Informe conectado a Supabase con un usuario de solo lectura (`looker_ro`): 4 tarjetas de KPIs, gráfico de barras, gráfico circular y 2 filtros dinámicos. |
+| 5. Integración | El informe está incrustado con un `<iframe>` responsivo en la página principal (`client/src/pages/DashboardFixed.jsx`). |
 
-## 📋 Project Overview
+## Tecnologías
 
-CoreInventory is a full-stack inventory management system designed to streamline warehouse operations, track stock movements, and provide detailed analytics for businesses of all sizes. Built with cutting-edge technology and best practices, this system offers an intuitive interface for managing products, warehouses, and inventory transactions.
+- **Frontend:** React + Vite
+- **Backend:** Node.js + Express + Sequelize
+- **Base de datos:** PostgreSQL en Supabase
+- **Analítica:** Google Looker Studio
 
-### 🏆 Hackathon Context
+## Estructura
 
-- **🎓 Event**: Odoo Xindus University Hackathon
-- **👥 Team**: Individual Project
-- **🎯 Theme**: Business Process Automation & Management
-- **🏢 University**: Odoo Xindus University
+```
+client/                  Frontend (React + Vite)
+server/
+  schema.sql             Creación de tablas, índices y RLS
+  seed.sql               Datos iniciales (50 movimientos, 30 productos, etc.)
+  analytics.sql          Vistas de analítica y usuario de solo lectura para Looker
+  .env.example           Plantilla de variables de entorno
+  src/                   API (rutas, modelos, configuración)
+```
 
----
+## Ejecución local
 
-## ✨ Key Features
+### Requisitos
+- Node.js 18 o superior y Git
+- Una cuenta de Supabase
 
-### 🔐 **Advanced User Management**
-- **Role-Based Access Control**: Admin, Manager, Staff roles with granular permissions
-- **Comprehensive Profiles**: Phone numbers, departments, job titles, bio, and profile pictures
-- **Secure Authentication**: JWT-based authentication with password reset functionality
-
-### 📦 **Product Management**
-- **Complete Product Catalog**: SKU tracking, categories, pricing, and stock levels
-- **Automated Stock Alerts**: Low stock notifications and reorder point management
-- **Multi-Warehouse Support**: Track inventory across multiple locations
-
-### 🏭 **Warehouse Operations**
-- **Location Management**: Organize warehouses into input, quality, stock, output, and packing areas
-- **Real-time Tracking**: Monitor stock movements between locations
-- **Warehouse Analytics**: Performance metrics and utilization reports
-
-### 📊 **Inventory Transactions**
-- **Stock Receipts**: Receive goods from suppliers with validation workflows
-- **Stock Deliveries**: Process outgoing shipments with tracking
-- **Internal Transfers**: Move stock between warehouses and locations
-- **Stock Adjustments**: Handle inventory discrepancies and corrections
-
-### 📈 **Dashboard & Analytics**
-- **Real-time KPIs**: Pending receipts, deliveries, transfers, and stock levels
-- **Visual Charts**: 7-day activity trends and movement patterns
-- **Performance Metrics**: Warehouse efficiency and stock turnover analysis
-
----
-
-## 🛠️ Technology Stack
-
-### 🎨 **Frontend**
-- **React 18** - Modern UI framework with hooks and context
-- **Vite** - Fast development server and build tool
-- **TailwindCSS** - Utility-first CSS framework
-- **Lucide React** - Beautiful icon library
-- **React Hot Toast** - Elegant notification system
-
-### 🖥️ **Backend**
-- **Node.js** - JavaScript runtime environment
-- **Express.js** - Fast and minimalist web framework
-- **Sequelize ORM** - Powerful database ORM with PostgreSQL
-- **JWT Authentication** - Secure token-based authentication
-- **Multer** - File upload handling for profile pictures
-
-### 🗄️ **Database**
-- **PostgreSQL** - Robust relational database with UUID support
-- **Advanced Schema**: Optimized table structures with proper relationships
-- **Data Integrity**: Foreign keys, constraints, and validation rules
-
-### 🔧 **Development Tools**
-- **Git** - Version control system
-- **Nodemon** - Auto-restart development server
-- **ESLint** - Code quality and consistency
-- **Environment Variables** - Secure configuration management
-
----
-
-## 🚀 Quick Start
-
-### 📋 Prerequisites
-- **Node.js** (v16 or higher)
-- **PostgreSQL** (v12 or higher)
-- **Git** for version control
-
-### ⚙️ Installation
+### 1. Clonar e instalar
 
 ```bash
-# Clone the repository
-git clone https://github.com/manthansingh26/Core-Inventory.git
+git clone https://github.com/JohnDeivid12/Core-Inventory.git
 cd Core-Inventory
+cd server && npm install
+cd ../client && npm install
+```
 
-# Install dependencies
-npm run install:server
-npm run install:client
+En Windows, si el clon falla con `Filename too long`, ejecuta antes `git config --global core.longpaths true`.
 
-# Environment Setup
+### 2. Preparar Supabase
+
+1. Crea un proyecto en [supabase.com](https://supabase.com).
+2. Abre **SQL Editor** y ejecuta, en este orden, el contenido de:
+   1. `server/schema.sql`
+   2. `server/seed.sql`
+   3. `server/analytics.sql` (antes, cambia `CAMBIA_ESTA_CLAVE` por una clave para el usuario `looker_ro`)
+3. En **Connect** → **Session pooler** copia el host, el puerto y el usuario.
+
+> Se usa el *Session pooler* porque la conexión directa de Supabase usa IPv6.
+
+### 3. Variables de entorno
+
+Copia `server/.env.example` como `server/.env` y completa `DB_PASS` con la contraseña de tu base de datos.
+El archivo `client/.env` ya incluye `VITE_API_URL=http://localhost:5000/api`.
+
+### 4. Arrancar
+
+```bash
+# Terminal 1
 cd server
-cp .env.example .env
-# Edit .env with your database credentials
+npm run dev
+
+# Terminal 2
+cd client
+npm run dev
 ```
 
-### 🗄️ Database Setup
+Abre `http://localhost:5173`.
 
-```bash
-# Create database tables
-cd server
-node create-tables.js
+### Usuarios de prueba
 
-# Setup initial data
-node setup-system.js
-node setup-warehouses.js
+Todos con la contraseña `Password123`:
+
+| Correo | Rol |
+|---|---|
+| laura.gomez@coreinventory.test | admin |
+| carlos.ramirez@coreinventory.test | manager |
+| diego.herrera@coreinventory.test | manager |
+| andres.torres@coreinventory.test | staff |
+| sofia.martinez@coreinventory.test | staff |
+
+> Si registras un usuario nuevo, la aplicación muestra el código OTP de verificación en pantalla (modo desarrollo). También se puede leer en la columna `verificationOtp` de la tabla `Users`.
+
+## Modelo de datos (DER)
+
+```mermaid
+erDiagram
+    Users {
+        uuid id PK
+        string name
+        string email UK
+        string password
+        enum role
+        boolean isVerified
+    }
+    Warehouses {
+        uuid id PK
+        string name
+        string code UK
+        string address
+    }
+    WarehouseLocations {
+        uuid id PK
+        string name
+        string code
+        enum type
+        uuid WarehouseId FK
+    }
+    Categories {
+        uuid id PK
+        string name UK
+        uuid parentId FK
+    }
+    Products {
+        uuid id PK
+        string name
+        string sku UK
+        decimal costPrice
+        decimal salePrice
+        int minStockLevel
+        uuid categoryId FK
+    }
+    ProductStocks {
+        uuid id PK
+        string locationName
+        int quantity
+        uuid ProductId FK
+        uuid WarehouseId FK
+    }
+    StockMoves {
+        uuid id PK
+        string reference UK
+        enum type
+        enum status
+        string partner
+        timestamptz scheduledDate
+        uuid fromWarehouseId FK
+        uuid toWarehouseId FK
+        uuid createdById FK
+        uuid validatedById FK
+    }
+    StockMoveLines {
+        uuid id PK
+        int demandQty
+        int doneQty
+        uuid StockMoveId FK
+        uuid ProductId FK
+    }
+
+    Warehouses ||--o{ WarehouseLocations : "tiene"
+    Categories ||--o{ Categories : "subcategoría"
+    Categories ||--o{ Products : "clasifica"
+    Products ||--o{ ProductStocks : "se almacena"
+    Warehouses ||--o{ ProductStocks : "guarda"
+    StockMoves ||--o{ StockMoveLines : "contiene"
+    Products ||--o{ StockMoveLines : "se mueve"
+    Warehouses ||--o{ StockMoves : "origen / destino"
+    Users ||--o{ StockMoves : "crea / valida"
 ```
 
-### 🎬 Development
+### Reglas de integridad
 
-```bash
-# Start development servers
-npm run dev:server    # Backend on http://localhost:5000
-npm run dev:client    # Frontend on http://localhost:5173
-```
+- `ON DELETE CASCADE`: líneas de movimiento, ubicaciones y stock se eliminan junto con su movimiento, bodega o producto.
+- `ON DELETE SET NULL`: al borrar una categoría, un usuario o una bodega, los registros que la referencian se conservan.
+- Índices en claves foráneas y en `StockMoves(type, status)` y `StockMoves(scheduledDate)` para las consultas del dashboard.
+- RLS activado en todas las tablas: la API pública de Supabase no puede leerlas.
 
-### 🧪 Testing
+### Datos de ejemplo (`seed.sql`)
 
-```bash
-# Run comprehensive tests
-cd server
-node test-complete-system.js
-node test-profile-editing.js
-node test-product-permissions.js
-```
+| Tabla | Registros |
+|---|---|
+| Users | 5 |
+| Warehouses | 4 |
+| WarehouseLocations | 12 |
+| Categories | 10 |
+| Products | 30 |
+| ProductStocks | 45 |
+| StockMoves | 50 (abril – octubre de 2026) |
+| StockMoveLines | 106 |
 
----
+Las cantidades de `ProductStocks` se calcularon simulando los movimientos completados, por lo que son coherentes con el historial.
 
-## 📱 User Guide
+## Acceso a la base de datos (Supabase)
 
-### 🔑 **Default Credentials**
-- **Admin**: `admin@test.com` / `admin123`
-- **Manager**: `manager@test.com` / `manager123`
-- **Staff**: `staff@test.com` / `staff123`
+| Parámetro | Valor |
+|---|---|
+| Host (Session pooler) | `aws-1-us-west-2.pooler.supabase.com` |
+| Puerto | `5432` |
+| Base de datos | `postgres` |
+| Usuario | `postgres.qwgkfxrsxwvqtdksqgfg` |
+| Contraseña | *Entregada por separado, no se publica en el repositorio* |
+| SSL | Requerido (`DB_SSL=true`) |
 
-### 👤 **User Roles & Permissions**
+Para Looker Studio se usa un usuario de **solo lectura**:
 
-| Role | Products | Warehouses | Receipts | Deliveries | Transfers | Users |
-|------|----------|------------|----------|------------|------------|-------|
-| **Admin** | ✅ Full Access | ✅ Full Access | ✅ Full Access | ✅ Full Access | ✅ Full Access | ✅ Full Access |
-| **Manager** | ✅ Create/Edit | ✅ Edit Only | ✅ Full Access | ✅ Full Access | ✅ Full Access | ❌ No Access |
-| **Staff** | 👁️ View Only | 👁️ View Only | ✅ Validate Only | ✅ Validate Only | ✅ Validate Only | ❌ No Access |
+| Parámetro | Valor |
+|---|---|
+| Usuario | `looker_ro.qwgkfxrsxwvqtdksqgfg` |
+| Contraseña | *Entregada por separado* |
+| Permisos | `SELECT` sobre las 7 tablas de negocio y las vistas `analytics.v_movimientos` y `analytics.v_stock`. Sin acceso a `Users`. |
 
-### 🎯 **Core Workflows**
+## Dashboard en Looker Studio
 
-1. **📦 Product Management**
-   - Create products with SKU, pricing, and stock levels
-   - Organize products into categories
-   - Set reorder points and minimum stock levels
+- **Fuentes de datos:** una por tabla, creadas con consulta personalizada (`SELECT * FROM public."NombreTabla"`). Los nombres de las tablas llevan mayúsculas y deben ir entre comillas, de lo contrario PostgreSQL los convierte a minúsculas y el conector falla.
+- **Combinaciones:** `Movimientos` (StockMoveLines + StockMoves + Products + Categories) e `Inventario` (ProductStocks + Products + Warehouses + Categories).
+- **Gráficos:** tarjetas de KPIs (stock total, movimientos completados, unidades recibidas y entregadas), barras (unidades por categoría y tipo) y circular (movimientos por estado).
+- **Filtros:** lista desplegable por tipo de movimiento y lista desplegable por categoría.
+- **Incrustación:** `<iframe>` responsivo en `client/src/pages/DashboardFixed.jsx`, con acceso de lector para cualquiera que tenga el enlace.
+- **Actualización de datos:** las fuentes se refrescan cada 12 horas para no agotar el límite de 15 conexiones del Session pooler.
 
-2. **🏭 Warehouse Operations**
-   - Create and manage warehouse locations
-   - Track stock movements between locations
-   - Monitor warehouse capacity and utilization
+Informe incrustado: https://datastudio.google.com/embed/reporting/bb6668de-340f-46a4-aff4-ae316e768427/page/bP1AG
 
-3. **📋 Inventory Transactions**
-   - Process receipts from suppliers
-   - Handle customer deliveries
-   - Perform internal stock transfers
-   - Adjust inventory levels as needed
+## Despliegue y video
 
----
+- **Aplicación desplegada:** _pendiente_
+- **Video demostrativo:** _pendiente_
 
-## 🏗️ Architecture
+## Créditos
 
-### 📊 **Database Schema**
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│     Users       │    │   Warehouses    │    │    Products     │
-├─────────────────┤    ├─────────────────┤    ├─────────────────┤
-│ id (UUID)       │    │ id (UUID)       │    │ id (UUID)       │
-│ name            │    │ name            │    │ name            │
-│ email           │    │ code            │    │ sku             │
-│ role            │    │ address         │    │ description     │
-│ phoneNumber     │    │ isActive        │    │ costPrice       │
-│ department      │    │ createdAt       │    │ salePrice       │
-│ jobTitle        │    │ updatedAt       │    │ minStockLevel   │
-│ bio             │    └─────────────────┘    │ reorderQty      │
-│ profilePicture  │                           │ isActive        │
-│ createdAt       │    ┌─────────────────┐    │ categoryId      │
-│ updatedAt       │    │ StockMoves      │    └─────────────────┘
-└─────────────────┘    ├─────────────────┤
-                         │ id (UUID)       │
-                         │ reference       │
-                         │ type            │
-                         │ status          │
-                         │ partner         │
-                         │ fromLocation    │
-                         │ toLocation      │
-                         │ scheduledDate   │
-                         │ validatedDate   │
-                         │ notes           │
-                         │ createdById     │
-                         │ validatedById   │
-                         │ createdAt       │
-                         │ updatedAt       │
-                         └─────────────────┘
-```
-
-### 🌐 **API Architecture**
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend       │    │   Backend API    │    │   PostgreSQL    │
-│                 │    │                 │    │                 │
-│ React App        │◄──►│ Express Server  │◄──►│ Database        │
-│                 │    │                 │    │                 │
-│ - Components    │    │ - Routes        │    │ - Tables        │
-│ - Hooks          │    │ - Middleware    │    │ - Relationships │
-│ - Context        │    │ - Models        │    │ - Constraints   │
-│ - State          │    │ - Validation    │    │ - Indexes       │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
----
-
-## 🎯 Hackathon Highlights
-
-### 💡 **Innovation Points**
-- **🔐 Advanced RBAC**: Granular permissions system with three distinct roles
-- **📸 Profile Management**: Complete user profiles with picture uploads
-- **📊 Real-time Analytics**: Live dashboard with KPI tracking
-- **🔄 Workflow Automation**: Streamlined inventory transaction processes
-- **📱 Responsive Design**: Mobile-friendly interface for warehouse operations
-
-### 🏆 **Technical Achievements**
-- **🚀 Performance**: Optimized database queries and efficient state management
-- **🔒 Security**: JWT authentication, input validation, and SQL injection prevention
-- **📈 Scalability**: Modular architecture supporting multi-warehouse operations
-- **🧪 Testing**: Comprehensive test suite for all major functionalities
-- **📚 Documentation**: Complete API documentation and user guides
-
-### 🎨 **User Experience**
-- **🎯 Intuitive Interface**: Clean, modern design with consistent styling
-- **⚡ Fast Performance**: Optimized loading times and smooth interactions
-- **📱 Mobile Ready**: Responsive design for tablets and smartphones
-- **♿ Accessibility**: Semantic HTML and ARIA-friendly components
-
----
-
-## 📊 Project Metrics
-
-### 📈 **Code Statistics**
-- **Lines of Code**: ~15,000+ lines
-- **Components**: 25+ React components
-- **API Endpoints**: 20+ RESTful endpoints
-- **Database Tables**: 8 main tables with relationships
-- **Test Coverage**: 90%+ for critical functionality
-
-### 🎯 **Features Delivered**
-- ✅ User Authentication & Authorization
-- ✅ Complete Profile Management System
-- ✅ Product & Category Management
-- ✅ Multi-Warehouse Support
-- ✅ Inventory Transaction Processing
-- ✅ Real-time Dashboard & Analytics
-- ✅ File Upload System (Profile Pictures)
-- ✅ Role-Based Access Control
-- ✅ Comprehensive Testing Suite
-
----
-
-## 🔮 Future Enhancements
-
-### 🚀 **Planned Features**
-- **📱 Mobile App**: React Native application for warehouse staff
-- **🤖 AI Integration**: Predictive analytics for stock forecasting
-- **📊 Advanced Reporting**: Custom reports and data export
-- **🔗 API Integration**: Third-party system integrations
-- **📦 Barcode/QR Code**: Scanning system for inventory tracking
-- **📧 Email Notifications**: Automated alerts and reports
-
-### 🏗️ **Technical Improvements**
-- **⚡ Performance**: Caching and optimization strategies
-- **🔒 Security**: Two-factor authentication and audit logging
-- **📊 Analytics**: Advanced business intelligence features
-- **🌐 Internationalization**: Multi-language support
-- **☁️ Cloud Deployment**: Docker containerization and cloud hosting
-
----
-
-## 👥 Team & Contact
-
-### 🎓 **Developer Information**
-- **👤 Name**: [Your Name]
-- **📧 Email**: [Your Email]
-- **🎓 University**: Odoo Xindus University
-- **📚 Course**: [Your Course/Program]
-- **🔗 GitHub**: [Your GitHub Profile]
-
-### 🏆 **Hackathon Details**
-- **📅 Event Date**: [Hackathon Date]
-- **🏢 Venue**: Odoo Xindus University
-- **👨‍💼 Mentors**: [Mentor Names]
-- **🏅 Awards**: [Any awards or recognition]
-
----
-
-## 📄 License & Acknowledgments
-
-### 📜 **License**
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-### 🙏 **Acknowledgments**
-- **Odoo Xindus University** - For organizing this amazing hackathon
-- **Hackathon Mentors** - For their guidance and support
-- **Open Source Community** - For the amazing tools and libraries
-- **Fellow Participants** - For the inspiring ideas and collaboration
-
----
-
-## 🚀 Deployment
-
-### 🐳 **Docker Deployment** (Coming Soon)
-```bash
-# Build and run with Docker
-docker-compose up -d
-```
-
-### ☁️ **Cloud Deployment** (Coming Soon)
-- **AWS**: Elastic Beanstalk deployment guide
-- **Heroku**: One-click deployment configuration
-- **DigitalOcean**: Droplet setup instructions
-
----
-
-## 📞 Support & Questions
-
-### 💬 **Get Help**
-- 📧 **Email**: [Your Email]
-- � **Discord**: [Your Discord Server]
-- 🐛 **Issues**: [GitHub Issues Page]
-- 📖 **Documentation**: [Project Wiki]
-
-### 🎯 **Quick Links**
-- 🌐 **Live Demo**: [Demo URL]
-- � **Project Board**: [Project Management Link]
-- 📹 **Demo Video**: [Video Presentation Link]
-- 📄 **Slides**: [Presentation Slides Link]
-
----
-
-<div align="center">
-
-## 🎉 Thank You for Visiting CoreInventory!
-
-**Built with ❤️ for Odoo Xindus University Hackathon**
-
-[⭐ Star This Repository] | [🍴 Fork This Project] | [🐛 Report Issues] | [💡 Suggest Features]
-
----
-
-*"Innovation in inventory management for a smarter business future"*
-
-</div>
+Proyecto base: [manthansingh26/Core-Inventory](https://github.com/manthansingh26/Core-Inventory).

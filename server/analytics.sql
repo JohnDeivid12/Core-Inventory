@@ -76,8 +76,22 @@ JOIN "Warehouses" w ON w."id" = s."WarehouseId"
 LEFT JOIN "Categories" c ON c."id" = p."categoryId";
 
 -- ---------- Usuario de solo lectura para Looker Studio ----------
-CREATE ROLE looker_ro LOGIN PASSWORD 'Looker2026Inventario';
+CREATE ROLE looker_ro LOGIN PASSWORD 'CAMBIA_ESTA_CLAVE';
 GRANT USAGE ON SCHEMA analytics TO looker_ro;
 GRANT SELECT ON analytics.v_movimientos, analytics.v_stock TO looker_ro;
 -- looker_ro no recibe ningun permiso sobre las tablas de "public"
 -- (ni sobre "Users"): solo puede leer estas dos vistas.
+
+-- ---------- Acceso de lectura a las tablas de negocio (para combinaciones en Looker) ----------
+-- Se excluye "Users" a proposito: contiene hashes de contrasenas.
+-- Las tablas tienen RLS activado, por eso cada una necesita una politica de lectura.
+GRANT USAGE ON SCHEMA public TO looker_ro;
+DO $$
+DECLARE t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['Warehouses','WarehouseLocations','Categories',
+    'Products','ProductStocks','StockMoves','StockMoveLines'] LOOP
+    EXECUTE format('GRANT SELECT ON %I TO looker_ro', t);
+    EXECUTE format('CREATE POLICY looker_read ON %I FOR SELECT TO looker_ro USING (true)', t);
+  END LOOP;
+END $$;

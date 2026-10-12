@@ -273,12 +273,26 @@ export default function Dashboard() {
 
       {/* Legend */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: '20px' }}>
-        {Object.entries(CHART_COLORS).map(([k, v]) => (
-          <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-secondary)' }}>
-            <span style={{ width: 10, height: 10, borderRadius: 3, background: v, display: 'inline-block' }} />
-            {k.charAt(0).toUpperCase() + k.slice(1)}s
-          </div>
-        ))}
+        {/* ... el código que ya tienes ... */}
+      </div>
+
+      {/* ===== Dashboard analítico de Looker Studio ===== */}
+      <div className="card" style={{ marginTop: 24, padding: '1rem' }}>
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
+          Business Analytics (Looker Studio)
+        </div>
+        <div style={{ fontSize: 12.5, color: 'var(--text-secondary)', marginBottom: 14 }}>
+          Datos en vivo desde Supabase: KPIs, stock por categoría y estado de los movimientos
+        </div>
+        <div style={{ position: 'relative', width: '100%', height: 'min(85vh, 900px)', minHeight: 480 }}>
+          <iframe
+            title="Dashboard analítico CoreInventory"
+            src="https://datastudio.google.com/embed/reporting/bb6668de-340f-46a4-aff4-ae316e768427/page/bP1AG"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 0, borderRadius: 8 }}
+            allowFullScreen
+            sandbox="allow-storage-access-by-user-activation allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+          />
+        </div>
       </div>
     </div>
   );
