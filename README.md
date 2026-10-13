@@ -225,9 +225,9 @@ Informe incrustado: https://datastudio.google.com/embed/reporting/bb6668de-340f-
 
 ## Despliegue y video
 
-- **Aplicación desplegada:**(https://core-inventory-lime.vercel.app)
+- **Aplicación desplegada:** https://core-inventory-lime.vercel.app
 - **API (Render):** https://core-inventory-9ov4.onrender.com
-- **Video demostrativo:** _pendiente_
+- **Video demostrativo:** https://youtu.be/N2NEbZjZtvw
 
 ## Créditos
 
